@@ -68,7 +68,7 @@ function LiveBridge() {
           const pnl = Number(trade.pnl_usd || 0);
           toast({
             title: `Closed $${trade.symbol} · ${pnl >= 0 ? "+" : "−"}$${Math.abs(pnl).toFixed(2)}`,
-            description: `${Number(trade.pnl_pct || 0).Fixed(1)}% PnL · ${(trade.exit_reasons || []).join(", ")" || "manual close"}`,
+            description: `${Number(trade.pnl_pct || 0).toFixed(1)}% PnL · ${(trade.exit_reasons || []).join(", ")" || "manual close"}`,
             variant: pnl >= 0 ? "success" : "error",
           });
           if (soundEnabled()) playSound(pnl > 0 ? "win" : "sell");
