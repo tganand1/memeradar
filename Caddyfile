@@ -1,0 +1,11 @@
+memeradar.local {
+  /api/* {
+    reverse_proxy backend:8000
+  }
+
+  /ws* {
+    reverse_proxy backend:8000
+  }
+
+  reverse_proxy frontend:3000
+}

@@ -1,0 +1,106 @@
+# MemeRadar configuration. Everything here is hot-reloadable from the
+# Settings UI (saved to the database and applied without a restart).
+app:
+  # Live mode is the default. Use `python run.py --demo` for the demo dataset.
+  mode: live
+  log_level: INFO
+  demo_seed: true
+  sol_price_usd: 190.0
+
+paper:
+  starting_balance: 100.0
+  min_trade_usd: 1.0
+  max_open_exposure_pct: 0.60
+  max_position_pct: 0.05
+  max_open_positions: 6
+  cash_reserve_pct: 0.10
+  max_pool_share_pct: 0.015
+  taker_fee_pct: 0.006
+  priority_fee_sol: 0.0008
+  jito_tip_sol: 0.0012
+  random_slippage_min_pct: 0.01
+  random_slippage_max_pct: 0.05
+  execution_delay_min_ms: 400
+  execution_delay_max_ms: 1500
+  failed_tx_rate: 0.12
+  sell_failed_tx_rate: 0.10
+  mark_haircut_pct: 0.02
+  equity_snapshot_seconds: 5
+
+strategy:
+  min_score_buy: 55
+  min_score_watch: 45
+  min_token_age_seconds: 120
+  safety_weight: 0.55
+  opportunity_weight: 0.45
+  hard_reject:
+    top10_max_pct: 0.50
+    top1_max_pct: 0.22
+    min_liquidity_usd: 3000.0
+    liquidity_drop_max_pct: 0.20
+    max_price_age_seconds: 15.0
+    creator_max_rugs: 3
+    min_holders: 25
+  sizing:
+    base_pct_of_equity: 0.05
+    score_scale: 1.5
+    confidence_floor: 0.7
+    confidence_ceiling: 1.3
+    kelly_fraction: 0.30
+    kelly_payoff: 1.0
+    losing_streak_cut: 0.75
+    winning_streak_boost: 1.12
+    max_streak_mult: 1.5
+    min_streak_mult: 0.45
+  exits:
+    stop_loss_pct: -0.25
+    take_profits:
+      - gain_pct: 1.00
+        sell_fraction: 0.50
+      - gain_pct: 3.00
+        sell_fraction: 0.50
+    trailing_stop_pct: 0.30
+    time_stop_minutes: 45
+    time_stop_min_gain_pct: 0.0
+    emergency_liquidity_drop_pct: 0.30
+  circuit_breaker:
+    daily_loss_limit_pct: 0.15
+  weights:
+    mint_authority: 14.0
+    freeze_authority: 12.0
+    liquidity: 12.0
+    lp_lock: 8.0
+    holders: 14.0
+    creator: 10.0
+    bundle: 8.0
+    honeypot: 14.0
+    rugcheck: 5.0
+    metadata: 3.0
+  opportunity_weights:
+    momentum: 30.0
+    volume: 25.0
+    buyers: 20.0
+    buy_pressure: 15.0
+    mcap_liquidity: 10.0
+
+listener:
+  demo_token_interval_seconds: 7.0
+  demo_token_jitter_seconds: 3.0
+  dexscreener_poll_seconds: 8.0
+  geckoterminal_poll_seconds: 30.0
+  price_poll_seconds: 5.0
+  max_tokens_per_minute: 90
+  position_price_poll_seconds: 4.0
+
+notifier:
+  enabled: false
+  notify_buys: true
+  notify_sells: true
+  notify_big_wins: true
+  big_win_usd: 10.0
+  notify_errors: true
+
+api:
+  cors_origins:
+    - http://localhost:3000
+    - http://127.0.0.1:3000

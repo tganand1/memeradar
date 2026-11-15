@@ -1,0 +1,168 @@
+"use client";
+
+import { Crosshair, Loader2, Target, X } from "lucide-react";
+import { useState } from "react";
+
+import { TokenAvatar } from "@/components/token-avatar";
+import { useToast } from "@/components/toast";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/lib/api";
+import { duration, fmtPct, fmtUsd, pnlTone } from "@/lib/format";
+import { useLiveStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+
+export function PositionsPanel() {
+  const snapshot = useLiveStore((state) => state.snapshot);
+  const openToken = useLiveStore((state) => state.openToken);
+  const toast = useToast();
+  const [pending, setPending] = useState<number[]>([]);
+  const positions = snapshot?.positions || [];
+  const wallet = snapshot?.wallet;
+
+  const closePosition = async (id: number, symbol: string) => {
+    setPending((current) => [...current, id]);
+    try {
+      await api.closePosition(id);
+      toast({ title: `Closing $${symbol}`, description: "Exit submitted to the paper engine.", variant: "info", duration: 2200 });
+    } catch (error) {
+      toast({
+        title: "Close failed",
+        description: error instanceof Error ? error.message : "Request failed",
+        variant: "error",
+      });
+    } finally {
+      setPending((current) => current.filter((item) => item !== id));
+    }
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="items-center pb-3">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-3.5 w-3.5 text-cyan" /> Open positions
+            <span className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[9px] text-muted">
+              {positions.length}
+            </span>
+          </CardTitle>
+          <p className="mt-0.5 text-[11px] text-muted">
+            exposure <span className="font-mono text-fg">{fmtUsd(wallet?.open_value ?? 0)}</span> · cash{" "}
+            <span className="font-mono text-fg">{fmtUsd(wallet?.cash ?? 0)}</span>
+          </p>
+        </div>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted">
+          {wallet?.open_count ? "auto-managed" : "waiting"}
+        </span>
+      </CardHeader>
+
+      <div className="max-h-[420px] overflow-y-auto">
+        {positions.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.02]">
+              <Crosshair className="h-5 w-5 text-muted" />
+            </div>
+            <p className="text-sm font-medium text-fg">No open positions</p>
+            <p className="max-w-[240px] text-[11px] leading-relaxed text-muted">
+              Entries fire when a token clears the safety gate and scores above the buy threshold.
+            </p>
+          </div>
+        ) : (
+          positions.map((position) => {
+            const busy = pending.includes(position.id);
+            return (
+              <div
+                key={position.id}
+                onClick={() => openToken(position.mint)}
+                className="group cursor-pointer border-b border-white/[0.04] px-4 py-3 transition-colors last:border-0 hover:bg-white/[0.03]"
+              >
+                <div className="flex items-start gap-2.5">
+                  <TokenAvatar symbol={position.symbol} imageUrl={position.image_url} size={32} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-[12px] font-semibold text-fg">${position.symbol}</span>
+                      {position.trailing_active ? (
+                        <span className="rounded border border-warn/25 bg-warn/10 px-1 py-0.5 font-mono text-[8px] uppercase text-warn">
+                          trail
+                        </span>
+                      ) : null}
+                      <span className="ml-auto font-mono text-[10px] text-muted">{duration(position.hold_seconds)}</span>
+                    </div>
+                    <div className="mt-1 flex flex-col gap-2">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-baseline gap-1 font-mono text-[11px]">
+                          <span className="font-semibold text-fg">${fmtUsd(position.value_usd)}</span>
+                          <span className="text-muted">| size</span>
+                          <span className="text-muted/70">${fmtUsd(position.size_usd)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={cn("font-mono text-[10px] font-semibold", pnlTone(position.pnl_pct))}>
+                            {position.pnl_usd >= 0 ? "+" : "−"}${fmtUsd(Math.abs(position.pnl_usd))} ({fmtPct(position.pnl_pct)})
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[9px] text-muted">
+                        <span>entry {fmtPrice(position.entry_price)}</span>
+                        <span>current {fmtPrice(position.current_price)}</span>
+                        <span>size ${fmtUsd(position.size_usd)}</span>
+                        <span className="hidden sm:inline">mc {fmtUsd(position.market_cap_at_entry)}</span>
+                        <span>peak {fmtPct(position.peak_gain_pct)}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={`https://dexscreener.com/solana/${position.mint}`}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-muted hover:text-fg"
+                        >
+                          Dex
+                        </a>
+                        <a
+                          href={`https://solscan.io/token/${position.mint}`}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-muted hover:text-fg"
+                        >
+                          Solscan
+                        </a>
+                        <a
+                          href={`https://rugcheck.xyz/tokens/${position.mint}`}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-muted hover:text-fg"
+                        >
+                          RugCheck
+                        </a>
+                      </div>
+                      <span className="hidden font-mono text-[9px] text-accent sm:inline">
+                        peak {fmtPct(position.peak_gain_pct, 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void closePosition(position.id, position.symbol);
+                    }}
+                    disabled={busy}
+                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-white/[0.07] text-muted/70 opacity-0 transition-all hover:border-danger/30 hover:bg-danger/10 hover:text-danger group-hover:opacity-100 disabled:opacity-100"
+                    aria-label={`Close ${position.symbol}`}
+                  >
+                    {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </Card>
+  );
+}

@@ -1,0 +1,86 @@
+import type {
+  Analytics,
+  AppConfig,
+  BacktestResult,
+  ConfigResponse,
+  EquityPoint,
+  LogEntry,
+  Snapshot,
+  TokenDetail,
+  TokenListResponse,
+  TradeListResponse,
+} from "./types";
+
+export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    cache: "no-store",
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    },
+  });
+  if (!response.ok) {
+    let detail = `${response.status} ${response.statusText}`;
+    try {
+      const body = await response.json();
+      detail = body.detail || detail;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  return (await response.json()) as T;
+}
+
+export const api = {
+  state: () => request<Snapshot>("/api/state"),
+  health: () => request<Record<string, unknown>>("/api/health"),
+  tokens: (params: { limit?: number; verdict?: string; q?: string; hard_rejected?: boolean } = {}) => {
+    const query = new URLSearchParams();
+    if (params.limit) query.set("limit", String(params.limit));
+    if (params.verdict) query.set("verdict", params.verdict);
+    if (params.q) query.set("q", params.q);
+    if (params.hard_rejected !== undefined) query.set("hard_rejected", String(params.hard_rejected));
+    return request<TokenListResponse>(`/api/tokens?${query.toString()}`);
+  },
+  token: (mint: string) => request<TokenDetail>(`/api/tokens/${encodeURIComponent(mint)}`),
+  trades: (
+    params: { status?: string; result?: string; min_score?: number; limit?: number; offset?: number } = {},
+  ) => {
+    const query = new URLSearchParams();
+    query.set("status", params.status || "all");
+    if (params.result && params.result !== "all") query.set("result", params.result);
+    if (params.min_score) query.set("min_score", String(params.min_score));
+    query.set("limit", String(params.limit || 500));
+    query.set("offset", String(params.offset || 0));
+    return request<TradeListResponse>(`/api/trades?${query.toString()}`);
+  },
+  equity: (range: string) => request<{ points: EquityPoint[]; wallet: Snapshot["wallet"] }>(`/api/equity?range=${range}`),
+  analytics: () => request<Analytics>("/api/analytics"),
+  logs: (limit = 300, level?: string) => {
+    const query = new URLSearchParams({ limit: String(limit) });
+    if (level && level !== "all") query.set("level", level);
+    return request<{ items: LogEntry[]; count: number }>(`/api/logs?${query.toString()}`);
+  },
+  config: () => request<ConfigResponse>("/api/config"),
+  saveConfig: (config: AppConfig) =>
+    request<ConfigResponse>("/api/config", { method: "PUT", body: JSON.stringify(config) }),
+  resetConfig: () => request<ConfigResponse>("/api/config/reset", { method: "POST" }),
+  applyPreset: (name: string) => request<ConfigResponse>(`/api/config/preset/${name}`, { method: "POST" }),
+  setBot: (enabled: boolean) =>
+    request<{ bot_enabled: boolean }>("/api/bot", { method: "POST", body: JSON.stringify({ enabled }) }),
+  closePosition: (id: number) =>
+    request<{ trade: Record<string, any> }>(`/api/positions/${id}/close`, { method: "POST" }),
+  resetAccount: () => request<{ wallet: Snapshot["wallet"] }>("/api/account/reset", { method: "POST" }),
+  backtest: (overrides: Record<string, unknown> = {}) =>
+    request<BacktestResult>("/api/backtest", { method: "POST", body: JSON.stringify({ overrides }) }),
+  spawnDemo: (count: number) =>
+    request<{ spawned: number }>("/api/demo/spawn", { method: "POST", body: JSON.stringify({ count }) }),
+  seedDemo: (force: boolean) =>
+    request<Record<string, unknown>>("/api/demo/seed", { method: "POST", body: JSON.stringify({ force }) }),
+  sol: () => request<{ price: number }>("/api/sol"),
+  exportUrl: () => `${API_BASE}/api/trades/export.csv`,
+};

@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  memeradar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: memeradar
+    restart: unless-stopped
+    environment:
+      - MEMERADAR_MODE=live
+      - DASHBOARD_USER=${DASHBOARD_USER:-admin}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-}
+      - HELIUS_API_KEY=${HELIUS_API_KEY:-}
+      - RUGCHECK_API_KEY=${RUGCHECK_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - memeradar_data:/app/backend/data
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data/caddy
+
+volumes:
+  memeradar_data:
+    driver: local
+  caddy_data:
+    driver: local

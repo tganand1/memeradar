@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 220 32% 4%;
+  --panel: 218 28% 7%;
+  --border: 220 18% 15%;
+  --fg: 210 40% 96%;
+  --muted: 215 16% 58%;
+  --accent: 157 90% 60%;
+  --cyan: 187 90% 58%;
+  --warn: 38 95% 60%;
+  --danger: 355 85% 62%;
+}
+
+* {
+  border-color: hsl(var(--border) / 0.6);
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1100px 560px at 12% -8%, hsl(var(--accent) / 0.09), transparent 60%),
+    radial-gradient(900px 520px at 88% -4%, hsl(var(--cyan) / 0.07), transparent 55%),
+    radial-gradient(1000px 700px at 50% 110%, hsl(var(--accent) / 0.04), transparent 60%),
+    hsl(var(--bg));
+  color: hsl(var(--fg));
+  font-feature-settings: "ss01" on, "cv01" on;
+  text-rendering: optimizeLegibility;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(hsl(var(--fg) / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--fg) / 0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 20%, transparent 80%);
+}
+
+::selection {
+  background: hsl(var(--accent) / 0.3);
+  color: hsl(var(--fg));
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--fg) / 0.12);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--fg) / 0.2);
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 28px hsl(var(--accent) / 0.4);
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" on;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .radar-grid {
+    background-image:
+      radial-gradient(circle at center, transparent 0, transparent 32%, hsl(var(--accent) / 0.12) 32.5%, transparent 33%),
+      radial-gradient(circle at center, transparent 0, transparent 64%, hsl(var(--accent) / 0.1) 64.5%, transparent 65%),
+      linear-gradient(hsl(var(--accent) / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--accent) / 0.06) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+    background-position: center;
+  }
+
+  .clip-corner {
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+}
+
+.dialog-overlay[data-state="open"] {
+  animation: overlay-in 0.2s ease-out;
+}
+
+.dialog-overlay[data-state="closed"] {
+  animation: overlay-out 0.15s ease-in;
+}
+
+.dialog-content[data-state="open"] {
+  animation: drawer-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dialog-content[data-state="closed"] {
+  animation: drawer-out 0.2s ease-in;
+}
+
+.dialog-center[data-state="open"] {
+  animation: content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dialog-center[data-state="closed"] {
+  animation: content-out 0.15s ease-in;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0.4;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0.4;
+    transform: translateX(60px);
+  }
+}
+
+@keyframes content-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes content-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
