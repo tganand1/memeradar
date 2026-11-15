@@ -7,7 +7,7 @@ import { TokenAvatar } from "@/components/token-avatar";
 import { useToast } from "@/components/toast";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
-import { duration, fmtPct, fmtUsd, pnlTone } from "@/lib/format";
+import { duration, fmtPct, fmtUsd, fmtPrice, pnlTone } from "@/lib/format";
 import { useLiveStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 

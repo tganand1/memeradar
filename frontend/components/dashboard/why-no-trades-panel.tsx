@@ -1,4 +1,4 @@
-import { ChevronRight, Target, Zap, AlertTriangle } from "lucide-react";
+import { ChevronRight, Target, Zap, AlertTriangle, Play } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
