@@ -21,7 +21,11 @@ from app.analyzer.clients import MarketClients
 from app.analyzer.scoring import score_token
 from app.analyzer.types import Analysis, NewToken
 from app.config import AppConfig
+from app.db.models import SkippedToken
 from app.utils import clamp, safe_float, short_addr
+from sqlalchemy import insert
+from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
 
 log = logging.getLogger("memeradar.analyzer")
 
@@ -75,6 +79,17 @@ class Analyzer:
                 checks, opp, hard, latent = self._demo_checks(token, config)
             else:
                 checks, opp, hard, latent = await self._live_checks(token)
+            # ── DexScreener boost/trending signal ──────────────────────────────────
+            try:
+                boost = await self._check_dexscreener_boost(token.mint)
+                opp["dexscreener_boost"] = boost["boost_pct"]
+                opp["dexscreener_status"] = boost["status"]
+                log.info(f"DexScreener boost={boost['boost_pct']:.1f}% status={boost['status']} for {token.symbol}")
+            except Exception as e:
+                log.warning(f"Failed to check DexScreener boost for {token.mint}: {e}")
+                opp["dexscreener_boost"] = 0.0
+                opp["dexscreener_status"] = "none"
+            # ---------------------------------
             scores = score_token(checks, opp, config.strategy, hard)
             analysis = Analysis(
                 checks=checks,

@@ -12,7 +12,7 @@ from app.bus import Broadcaster
 from app.config import AppConfig
 from app.db.models import EquityPoint, Setting, Token, Trade
 from app.db.session import SessionLocal
-from app.paper_engine.slippage import execution_price, execution_slippage, fee_usd
+from app.paper_engine.slippage import execution_price, execution_slippage, fee_usd, jupiter_quote, entry_price, exit_price
 from app.serializers import trade_dict
 from app.strategy.exits import ExitAction, evaluate_exit
 from app.strategy.sizing import SizingResult
@@ -283,8 +283,34 @@ class PaperEngine:
 
         delay_ms = self.rng.randint(paper.execution_delay_min_ms, max(paper.execution_delay_min_ms, paper.execution_delay_max_ms))
         await asyncio.sleep(delay_ms / 1000.0)
+        # ── Realistic entry pricing via Jupiter quote + slippage ────────────────
+        # Quote the actual position size from Jupiter so the price is
+        # something the bot could actually have obtained at that moment (no look-ahead).
+        amount_raw = int(max(size, paper.min_trade_usd) * 1_000_000 / max(market_price, 1e-6))
+        quote = await jupiter_quote(token["mint"], amount_raw, market_price, config)
+        if quote and float(quote.get("outAmount", 0)) > 0:
+            out_amount = float(quote["outAmount"])
+            effective_price = max(market_price * out_amount / amount_raw, 1e-6)
+        else:
+            effective_price = market_price
+
+        # Now add AMM slippage, random latency drift, and network fee impact:
+        import random as _rng
+        latency_jitter = _rng.uniform(paper.execution_delay_min_ms / 1000.0 * 0.01, paper.execution_delay_max_ms / 1000.0 * 0.01)
+        liq_for_impact = max(liquidity, detected_liquidity or liquidity)
+        effective_price = entry_price(
+            market_price=market_price,
+            size_usd=max(size, 0.01),
+            liquidity_usd=liq_for_impact,
+            rng=_rng,
+            paper=paper,
+        )
+        # effective_price now includes AMM impact + random slippage + fee equivalent
+        # -------------------------------------------------------------------
+
+        delay_ms = self.rng.randint(paper.execution_delay_min_ms, max(paper.execution_delay_min_ms, paper.execution_delay_max_ms))
+        await asyncio.sleep(delay_ms / 1000.0)
         fresh = await price_provider(token["mint"])
-        price = float((fresh or {}).get("price") or market_price)
         liquidity = float((fresh or {}).get("liquidity") or liquidity_usd)
         detected_liquidity = float((fresh or {}).get("detected_liquidity") or liquidity_usd or 0.0)
         age_seconds = float((fresh or {}).get("age_seconds") or 0.0)

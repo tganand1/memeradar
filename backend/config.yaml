@@ -26,6 +26,7 @@ paper:
   sell_failed_tx_rate: 0.10
   mark_haircut_pct: 0.02
   equity_snapshot_seconds: 5
+  live_trading: false
 
 strategy:
   min_score_buy: 55

@@ -60,6 +60,22 @@ class Token(Base):
     last_updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # ── Skipped-token tracker ───────────────────────────────────────────
+    skipped: Mapped[bool] = mapped_column(Boolean, default=False)
+    reject_reason: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    skipped_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    # ── Future price/liquidity tracking (DexScreener) ────────────────────
+    price_5m: Mapped[float] = mapped_column(Float, default=0.0)
+    price_15m: Mapped[float] = mapped_column(Float, default=0.0)
+    price_1h: Mapped[float] = mapped_column(Float, default=0.0)
+    price_4h: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_5m: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_15m: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_1h: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_4h: Mapped[float] = mapped_column(Float, default=0.0)
+    is_real_runner: Mapped[bool] = mapped_column(Boolean, default=False)
+
     __table_args__ = (
         Index("ix_tokens_verdict_created", "verdict", "created_at"),
         Index("ix_tokens_hard_rejected", "hard_rejected"),
@@ -142,6 +158,43 @@ class LogEntry(Base):
     category: Mapped[str] = mapped_column(String(32), default="system")
     message: Mapped[str] = mapped_column(Text, default="")
     meta: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+
+
+class SkippedToken(Base):
+    __tablename__ = "skipped_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    mint: Mapped[str] = mapped_column(String(64), index=True)
+    name: Mapped[str] = mapped_column(String(128), default="")
+    symbol: Mapped[str] = mapped_column(String(32), default="")
+    decision_time: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    # Decision-time features
+    score: Mapped[float] = mapped_column(Float, default=0.0)
+    safety_score: Mapped[float] = mapped_column(Float, default=0.0)
+    opportunity_score: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    market_cap_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    num_holders: Mapped[int] = mapped_column(Integer, default=0)
+    num_buyers: Mapped[int] = mapped_column(Integer, default=0)
+    verdict: Mapped[str] = mapped_column(String(16), default="AVOID")
+    reject_reason: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+    # Decision metadata
+    hard_rejected: Mapped[bool] = mapped_column(Boolean, default=False)
+    red_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    green_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    # Future price/liquidity tracking (DexScreener)
+    price_5m: Mapped[float] = mapped_column(Float, default=0.0)
+    price_15m: Mapped[float] = mapped_column(Float, default=0.0)
+    price_1h: Mapped[float] = mapped_column(Float, default=0.0)
+    price_4h: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_5m: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_15m: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_1h: Mapped[float] = mapped_column(Float, default=0.0)
+    liquidity_4h: Mapped[float] = mapped_column(Float, default=0.0)
+    is_real_runner: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class TokenSnapshot(Base):

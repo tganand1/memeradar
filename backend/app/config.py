@@ -37,6 +37,7 @@ class PaperSection(BaseModel):
     sell_failed_tx_rate: float = 0.10
     mark_haircut_pct: float = 0.02
     equity_snapshot_seconds: int = 5
+    live_trading: bool = False
 
 
 class HardReject(BaseModel):
